@@ -4,14 +4,23 @@ function notFound(req, res) {
 
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
-  if (err.code === "ER_DUP_ENTRY") {
-    return res.status(409).json({ success: false, message: "Email already exists" });
+  // Prisma: unique constraint failed (duplicate email)
+  if (err.code === "P2002") {
+    return res.status(409).json({ success: false, message: "A record with this value already exists" });
   }
 
-  if (err.type === "entity.parse.failed") {
-    return res.status(400).json({ success: false, message: "Invalid JSON body" });
+  if (err.code === "P2003") {
+    return res.status(400).json({ success: false, message: "Referenced record does not exist" });
   }
 
+  if (err.code === "P2025") {
+    return res.status(404).json({ success: false, message: "Record not found" });
+  }
+
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res.status(400).json({ success: false, message: "Image must be 2 MB or smaller" });
+  }
+  
   console.error(err);
   res.status(err.status || 500).json({
     success: false,

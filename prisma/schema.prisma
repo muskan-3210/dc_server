@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum OnboardingStatus {
+  pending
+  in_review
+  approved
+  rejected
+}
+
+model User {
+  id                   Int         @id @default(autoincrement())
+  name                 String      @db.VarChar(100)
+  email                String      @unique @db.VarChar(150)
+  password_hash        String      @db.VarChar(255)
+  onboarding_completed Boolean     @default(false)
+  created_at           DateTime    @default(now())
+  onboarding           Onboarding?
+
+  @@map("users")
+}
+
+model Onboarding {
+  id           Int              @id @default(autoincrement())
+  user_id      Int              @unique
+  user         User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  full_name    String           @db.VarChar(100)
+  email        String           @db.VarChar(150)
+  phone        String           @db.VarChar(20)
+  company_name String?          @db.VarChar(150)
+  role         String           @db.VarChar(50)
+  address      String?          @db.VarChar(255)
+  status       OnboardingStatus @default(pending)
+  created_at   DateTime         @default(now())
+  updated_at   DateTime         @updatedAt
+
+  @@index([status])
+  @@map("onboarding")
+}
+
+model Category {
+  id          Int        @id @default(autoincrement())
+  name        String     @db.VarChar(100)
+  slug        String     @unique @db.VarChar(120)
+  description String?    @db.VarChar(255)
+  parent_id   Int?
+  parent      Category?  @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryTree")
+  products    Product[]
+  is_active   Boolean    @default(true)
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  @@index([parent_id])
+  @@index([is_active])
+  @@map("categories")
+}
+
+model Product {
+  image_url   String?  @db.VarChar(255)
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(150)
+  sku         String   @unique @db.VarChar(50)
+  description String?  @db.VarChar(500)
+  price       Decimal  @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  category_id Int
+  category    Category @relation(fields: [category_id], references: [id])
+  is_active   Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([category_id])
+  @@map("products")
+}
